@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shown for the moment before Flutter takes over. Paper 0 from the palette,
+     so the launch does not flash white against the app background. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/launch_background"/>
+</layer-list>

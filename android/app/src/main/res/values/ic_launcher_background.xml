@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- XFLWS accent, the same value as Pal.act in the Dart tokens. -->
+    <color name="ic_launcher_background">#FB721C</color>
+</resources>

@@ -1,0 +1,63 @@
+name: xflws
+description: XFLWS — Egypt's digital wealth gateway.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  intl: ^0.19.0
+  flutter_svg: ^2.0.10+1
+  # Voice: recognition in, speech out. Both degrade to text when the platform
+  # refuses, which is common on desktop browsers.
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.2.0
+  shared_preferences: ^2.3.2
+  # flutter_webrtc removed for now: version 0.12.12 declares compileSdk 31 and
+  # is not buildable against AGP 9. The call screen runs in simulated mode
+  # instead — whiteboard and chat are fully live, only the media stream is
+  # stubbed. Restoring it is this one line plus lib/screens/call.dart.
+  # flutter_webrtc: ^0.12.5
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/brand/
+    # The Cairo skyline behind the hero: the Tower, the Nile with feluccas,
+    # the pyramids and the mosque. Extracted from the base64 <img> tags in
+    # index.html. skyPhoto is the shipped default (sky='photo').
+    - assets/sky/
+
+  fonts:
+    # Extracted from the base64 @font-face blocks in index.html and converted
+    # from woff2 to TTF. Cairo 400 and 600 are the latin and Arabic subsets
+    # merged, so Arabic renders once the strings are translated.
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-400.ttf
+          weight: 400
+        - asset: assets/fonts/Cairo-500.ttf
+          weight: 500
+        - asset: assets/fonts/Cairo-600.ttf
+          weight: 600
+        - asset: assets/fonts/Cairo-700.ttf
+          weight: 700
+
+    # The 119 Phosphor glyphs the web build actually references, at the exact
+    # codepoints declared in its CSS. See lib/core/ph.dart.
+    - family: Phosphor
+      fonts:
+        - asset: assets/fonts/Phosphor-400.ttf
+    - family: PhosphorFill
+      fonts:
+        - asset: assets/fonts/Phosphor-Fill-400.ttf

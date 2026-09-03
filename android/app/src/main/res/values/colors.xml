@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pal.bridgeLight.p0 — matches the app background so launch is seamless. -->
+    <color name="launch_background">#F4F2EF</color>
+</resources>
