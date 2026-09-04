@@ -11,6 +11,7 @@ import '../widgets/holdings.dart' show tickerColour;
 import '../widgets/nav_row.dart';
 import '../widgets/open_security.dart';
 import 'flows.dart';
+import 'instrument_list.dart';
 import '../data/api.dart';
 import '../data/models.dart';
 
@@ -406,7 +407,24 @@ class _MarketsScreenState extends State<MarketsScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, i) {
           final x = rows[i];
-          return Container(
+          return GestureDetector(
+            onTap: () {
+              // Open EGX30 constituents
+              if (widget.api != null) {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    body: InstrumentListScreen(
+                      filter: InstrumentFilter.egx30,
+                      api: widget.api!,
+                      money: widget.money,
+                      available: widget.available,
+                      logoUrl: widget.logoUrl,
+                    ),
+                  ),
+                ));
+              }
+            },
+            child: Container(
             width: 168,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -453,6 +471,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                 PctTag(delta: x.$3, up: x.$4),
               ],
             ),
+          ),
           );
         },
       ),
@@ -544,24 +563,43 @@ class _MarketsScreenState extends State<MarketsScreen> {
       child: Column(
         children: [
           for (var i = 0; i < sectors.length; i++)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: i == 0 ? BorderSide.none : BorderSide(color: pal.line),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: pal.tint,
-                      borderRadius: BorderRadius.circular(10),
+            GestureDetector(
+              onTap: () {
+                // Open stocks filtered by this sector
+                if (widget.api != null) {
+                  sectorFilterName = sectors[i].$1;
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      body: InstrumentListScreen(
+                        filter: InstrumentFilter.bySector,
+                        api: widget.api!,
+                        money: widget.money,
+                        available: widget.available,
+                        logoUrl: widget.logoUrl,
+                      ),
                     ),
-                    child: Icon(sectors[i].$3, size: 17, color: pal.actDk),
+                  ));
+                }
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: i == 0 ? BorderSide.none : BorderSide(color: pal.line),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: pal.tint,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(sectors[i].$3, size: 17, color: pal.actDk),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -627,6 +665,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                   ),
                 ],
               ),
+            ),
             ),
         ],
       ),

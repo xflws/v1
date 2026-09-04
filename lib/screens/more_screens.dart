@@ -349,21 +349,24 @@ class _TbillsScreenState extends State<TbillsScreen> {
                   child: Column(
                     children: [
                       for (var i = 0; i < rows.length; i++)
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: i == 0
-                                  ? BorderSide.none
-                                  : BorderSide(color: pal.line),
+                        GestureDetector(
+                          onTap: () => _showTbillDetail(context, rows[i]),
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                top: i == 0
+                                    ? BorderSide.none
+                                    : BorderSide(color: pal.line),
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                alignment: Alignment.center,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: pal.tint,
                                   borderRadius: BorderRadius.circular(12),
@@ -420,6 +423,7 @@ class _TbillsScreenState extends State<TbillsScreen> {
                             ],
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),
@@ -434,6 +438,90 @@ class _TbillsScreenState extends State<TbillsScreen> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  void _showTbillDetail(
+      BuildContext context, (String, String, double, String, num, String) t) {
+    final pal = context.pal;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: pal.p2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(
+                    color: pal.line,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(t.$1,
+                  style: TextStyle(
+                    fontSize: 17, fontWeight: FontWeight.w600,
+                    color: pal.ink,
+                  )),
+              Text('${t.$2} · ${t.$4}',
+                  style: TextStyle(fontSize: 12, color: pal.mute)),
+              const SizedBox(height: 16),
+              _factRow(context, 'Yield', '${t.$3.toStringAsFixed(1)}% a year'),
+              _factRow(context, 'Maturity', t.$4),
+              _factRow(context, 'Minimum investment',
+                  widget.money.format(t.$5)),
+              _factRow(context, 'Type', t.$6),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () => Navigator.of(sheet).pop(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: pal.act,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text('Invest',
+                      style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      )),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _factRow(BuildContext context, String label, String value) {
+    final pal = context.pal;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: pal.line)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: pal.mute)),
+          Text(value,
+              style: TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w500, color: pal.ink,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              )),
         ],
       ),
     );

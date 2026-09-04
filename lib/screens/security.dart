@@ -34,6 +34,7 @@ class SecurityScreen extends StatefulWidget {
     this.holding,
     this.logoUrl,
     this.onTrade,
+    this.sessionState = 'Closed',
   });
 
   final Instrument instrument;
@@ -46,6 +47,9 @@ class SecurityScreen extends StatefulWidget {
 
   /// side is 'buy' or 'sell'.
   final void Function(String side)? onTrade;
+
+  /// Market session state from ?r=meta — unified across the app.
+  final String sessionState;
 
   @override
   State<SecurityScreen> createState() => _SecurityScreenState();
@@ -95,67 +99,220 @@ class _SecurityScreenState extends State<SecurityScreen> {
   }
 
   void _showAlertDialog(BuildContext ctx) {
+    final pal = ctx.pal;
     final priceCtrl = TextEditingController(
       text: widget.instrument.last.toStringAsFixed(2),
     );
-    String direction = 'above';
-    showDialog<void>(
+    showModalBottomSheet<void>(
       context: ctx,
-      builder: (dc) => StatefulBuilder(
-        builder: (dc2, setS) => AlertDialog(
-          title: Text('Price alert on ${widget.instrument.ticker}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
+      isScrollControlled: true,
+      backgroundColor: pal.p2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheet) => StatefulBuilder(
+        builder: (sheet, setS) {
+          String direction = 'above';
+          String action = 'notify'; // notify | buy | sell
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: 20, right: 20, top: 16,
+                bottom: MediaQuery.of(sheet).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: RadioListTile(
-                      title: const Text('Rises above'),
-                      value: 'above',
-                      groupValue: direction,
-                      onChanged: (v) => setS(() => direction = v!),
-                      dense: true,
+                  Center(
+                    child: Container(
+                      width: 36, height: 4,
+                      decoration: BoxDecoration(
+                        color: pal.line,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                  Expanded(
-                    child: RadioListTile(
-                      title: const Text('Falls below'),
-                      value: 'below',
-                      groupValue: direction,
-                      onChanged: (v) => setS(() => direction = v!),
-                      dense: true,
+                  const SizedBox(height: 16),
+                  Text('Price alert · ${widget.instrument.ticker}',
+                      style: TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w600,
+                        color: pal.ink,
+                      )),
+                  Text(
+                    'Last price: ${widget.money.format(widget.instrument.last, decimals: 2)} ${widget.money.code}',
+                    style: TextStyle(fontSize: 12, color: pal.mute),
+                  ),
+                  const SizedBox(height: 16),
+                  // Condition: above / below
+                  Text('Condition',
+                      style: TextStyle(fontSize: 12, color: pal.mute)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      for (final (val, label, icon) in [
+                        ('above', 'Rises above', Ph.trendUp),
+                        ('below', 'Falls below', Ph.trendDown),
+                      ])
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setS(() => direction = val),
+                            child: Container(
+                              margin: EdgeInsets.only(
+                                  right: val == 'above' ? 6 : 0),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: direction == val
+                                    ? pal.tint
+                                    : pal.p1,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: direction == val
+                                      ? pal.act
+                                      : pal.line,
+                                  width: direction == val ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(icon, size: 15,
+                                      color: direction == val
+                                          ? pal.actDk
+                                          : pal.mute),
+                                  const SizedBox(width: 6),
+                                  Text(label,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: direction == val
+                                            ? FontWeight.w600
+                                            : FontWeight.w400,
+                                        color: direction == val
+                                            ? pal.actDk
+                                            : pal.ink,
+                                      )),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // Price input
+                  Text('At price',
+                      style: TextStyle(fontSize: 12, color: pal.mute)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: priceCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w600,
+                      color: pal.ink,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    decoration: InputDecoration(
+                      hintText: '0.00',
+                      suffixText: widget.money.code,
+                      filled: true,
+                      fillColor: pal.p1,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: pal.line),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: pal.act, width: 1.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Action: notify / buy / sell
+                  Text('When triggered',
+                      style: TextStyle(fontSize: 12, color: pal.mute)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      for (final (val, label) in [
+                        ('notify', 'Notify me'),
+                        ('buy', 'Auto-buy'),
+                        ('sell', 'Auto-sell'),
+                      ])
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setS(() => action = val),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 10),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: action == val ? pal.tint : pal.p1,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: action == val
+                                      ? pal.act
+                                      : pal.line,
+                                  width: action == val ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Text(label,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: action == val
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color: action == val
+                                        ? pal.actDk
+                                        : pal.ink,
+                                  )),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (action != 'notify') ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      action == 'buy'
+                          ? 'Opens a pre-filled buy ticket when the price is reached. You still confirm.'
+                          : 'Opens a pre-filled sell ticket when the price is reached. You still confirm.',
+                      style: TextStyle(
+                          fontSize: 11, height: 1.4, color: pal.mute),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  GestureDetector(
+                    onTap: () {
+                      final px = num.tryParse(priceCtrl.text);
+                      if (px == null || px <= 0) return;
+                      Navigator.of(sheet).pop();
+                      _saveAlert(context, direction, px);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: pal.act,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text('Set alert',
+                          style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          )),
                     ),
                   ),
                 ],
               ),
-              TextField(
-                controller: priceCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Price',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dc).pop(),
-              child: const Text('Cancel'),
             ),
-            FilledButton(
-              onPressed: () {
-                final px = num.tryParse(priceCtrl.text);
-                if (px == null || px <= 0) return;
-                Navigator.of(dc).pop();
-                _saveAlert(context, direction, px);
-              },
-              child: const Text('Set alert'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -415,7 +572,17 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   Widget _status(BuildContext context) {
     final pal = context.pal;
-    final trading = widget.instrument.tradable;
+    // Use the market-wide session state. If the instrument itself is
+    // halted/suspended, show that instead.
+    final instState = widget.instrument.state.toLowerCase();
+    final isHalted = instState == 'halted' || instState == 'suspended';
+    final isOpen = widget.sessionState.toLowerCase().contains('open') ||
+        widget.sessionState.toLowerCase() == 'trading';
+    final label = isHalted
+        ? widget.instrument.state
+        : isOpen
+            ? 'Trading'
+            : 'Market closed';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
@@ -424,12 +591,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: trading ? pal.gain : pal.mute,
+              color: (isOpen && !isHalted) ? pal.gain : pal.mute,
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: 8),
-          Text(widget.instrument.state,
+          Text(label,
               style: TextStyle(fontSize: 11.5, color: pal.mute)),
         ],
       ),

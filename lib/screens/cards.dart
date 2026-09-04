@@ -176,7 +176,28 @@ class _CardsScreenState extends State<CardsScreen> {
     final pal = context.pal;
     return Scaffold(
       backgroundColor: pal.p0,
-      body: ListView(
+      bottomNavigationBar: _buildBottomBar(context),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _cards.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Ph.creditCard, size: 40, color: pal.mute),
+                      const SizedBox(height: 12),
+                      Text('No cards yet',
+                          style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600,
+                            color: pal.ink,
+                          )),
+                      const SizedBox(height: 6),
+                      Text('Issue your first card below.',
+                          style: TextStyle(fontSize: 12.5, color: pal.mute)),
+                    ],
+                  ),
+                )
+              : ListView(
         padding: EdgeInsets.zero,
         children: [
           SafeArea(
@@ -775,6 +796,53 @@ class _CardsScreenState extends State<CardsScreen> {
         child: Text('No card transactions yet.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12.5, color: pal.mute)),
+      ),
+    );
+  }
+
+  /// Bottom bar matching the Shell's tab bar so navigation context is kept.
+  Widget _buildBottomBar(BuildContext context) {
+    final pal = context.pal;
+    final tabs = [
+      (Ph.house, 'Home'),
+      (Ph.magnifyingGlass, 'Discover'),
+      (Ph.chartLine, 'Markets'),
+      (Ph.wallet, 'Money'),
+      (Ph.gear, 'Settings'),
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        color: pal.p2,
+        border: Border(top: BorderSide(color: pal.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              for (final t in tabs)
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(t.$1,
+                          size: 20,
+                          color: t.$2 == 'Money' ? pal.act : pal.mute),
+                      const SizedBox(height: 3),
+                      Text(t.$2,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            color: t.$2 == 'Money' ? pal.actDk : pal.mute,
+                          )),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

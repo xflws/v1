@@ -484,18 +484,21 @@ class SearchScreen extends StatefulWidget {
     required this.api,
     required this.money,
     this.available = 0,
+    this.initialQuery = '',
   });
 
   final Api api;
   final Money money;
   final num available;
+  final String initialQuery;
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final TextEditingController _q = TextEditingController();
+  late final TextEditingController _q =
+      TextEditingController(text: widget.initialQuery);
   List<Instrument> _all = const [];
   bool _loading = true;
 

@@ -189,6 +189,10 @@ class Instrument {
     required this.change,
     this.state = 'Trading',
     this.sector = '',
+    this.kind = 'share',
+    this.currency = 'EGP',
+    this.index = '',
+    this.listed = '',
     this.history = const [],
     this.volume = 0,
     this.turnover = 0,
@@ -202,6 +206,18 @@ class Instrument {
   /// Trading | Halted | Suspended | Closed.
   final String state;
   final String sector;
+
+  /// share | fund | metal — the asset class.
+  final String kind;
+
+  /// EGP | USD | EUR
+  final String currency;
+
+  /// EGX30 if the stock is in the index.
+  final String index;
+
+  /// Year listed, for "Recently listed" collections.
+  final String listed;
 
   /// Closing prices, oldest first, seeded ninety days deep by the backend.
   /// Empty when the deployment has not been seeded.
@@ -223,6 +239,10 @@ class Instrument {
         change: _n(j['change']),
         state: _s(j['state']).isEmpty ? 'Trading' : _s(j['state']),
         sector: _s(j['sector']),
+        kind: _s(j['kind']).isEmpty ? 'share' : _s(j['kind']),
+        currency: _s(j['currency']).isEmpty ? 'EGP' : _s(j['currency']),
+        index: _s(j['index']),
+        listed: _s(j['listed']),
         history: ((j['history'] as List?) ?? const [])
             .map((e) => e is num ? e : num.tryParse('$e') ?? 0)
             .toList(),

@@ -245,12 +245,14 @@ class HoldingsAccordion extends StatefulWidget {
     required this.money,
     this.logoUrl,
     this.onOpenHolding,
+    this.onBrowse,
   });
 
   final Portfolio portfolio;
   final Money money;
   final String Function(String ticker)? logoUrl;
   final ValueChanged<Holding>? onOpenHolding;
+  final VoidCallback? onBrowse;
 
   @override
   State<HoldingsAccordion> createState() => _HoldingsAccordionState();
@@ -276,6 +278,7 @@ class _HoldingsAccordionState extends State<HoldingsAccordion> {
         title: 'Nothing here yet',
         body: 'Buy your first stock, fund or gram of gold.',
         ctaLabel: 'Browse investments',
+        onCta: widget.onBrowse,
       );
     }
 

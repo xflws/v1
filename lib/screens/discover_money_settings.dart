@@ -18,6 +18,7 @@ import 'transfer.dart';
 import 'more_screens.dart';
 import 'onboarding_settings.dart';
 import 'settings_subscreens.dart';
+import 'instrument_list.dart';
 import 'flows.dart';
 import 'copy_trading.dart';
 
@@ -31,14 +32,19 @@ const List<(String, String, String)> kProducts = [
   ('Savings', 'Daily returns and goals', 'savings'),
 ];
 
+/// Colour to CSS hex for inline SVGs.
+String _hex(Color c) =>
+    '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+
 /// COLLECTIONS.
-const List<(String, String, IconData)> kCollections = [
-  ('Health care', '2 stocks', Ph.firstAidKit),
-  ('Sharia-compliant', '3 stocks', Ph.moonStars),
-  ('EGX30 companies', '3 stocks', Ph.buildings),
-  ('Dividend payers', '3 stocks', Ph.handCoins),
-  ('Recently listed', '1 stock', Ph.sparkle),
-  ('Most traded', '4 stocks', Ph.trendUp),
+/// COLLECTIONS — counts are computed dynamically from the API.
+const List<(String, IconData)> kCollections = [
+  ('Health care', Ph.firstAidKit),
+  ('Sharia-compliant', Ph.moonStars),
+  ('EGX30 companies', Ph.buildings),
+  ('Dividend payers', Ph.handCoins),
+  ('Recently listed', Ph.sparkle),
+  ('Most traded', Ph.trendUp),
 ];
 
 /// moreNav.
@@ -62,7 +68,7 @@ const List<(IconData, String, String)> kHelpNav = [
   (Ph.fileText, 'Request a statement', 'Email or certified copy'),
 ];
 
-class DiscoverScreen extends StatelessWidget {
+class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({
     super.key,
     required this.money,
@@ -73,6 +79,55 @@ class DiscoverScreen extends StatelessWidget {
   final Money money;
   final Api? api;
   final num available;
+
+  @override
+  State<DiscoverScreen> createState() => _DiscoverScreenState();
+}
+
+class _DiscoverScreenState extends State<DiscoverScreen> {
+  List<Instrument> _instruments = const [];
+
+  Money get money => widget.money;
+  Api? get api => widget.api;
+  num get available => widget.available;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInstruments();
+  }
+
+  Future<void> _loadInstruments() async {
+    if (api == null) return;
+    try {
+      final rows = await api!.instruments();
+      if (mounted) {
+        setState(() => _instruments = rows
+            .whereType<Map>()
+            .map((e) => Instrument.fromJson(Map<String, dynamic>.from(e)))
+            .toList());
+      }
+    } catch (_) {}
+  }
+
+  /// Count instruments matching a filter.
+  int _countFor(InstrumentFilter f) =>
+      _instruments.where((i) => matchesFilter(i, f)).length;
+
+  String _countLabel(InstrumentFilter f) {
+    final n = _countFor(f);
+    return n == 1 ? '1 instrument' : '$n instruments';
+  }
+
+  InstrumentFilter _filterForCollection(String name) => switch (name) {
+    'Health care' => InstrumentFilter.healthcare,
+    'Sharia-compliant' => InstrumentFilter.shariaFunds,
+    'EGX30 companies' => InstrumentFilter.egx30,
+    'Dividend payers' => InstrumentFilter.dividend,
+    'Recently listed' => InstrumentFilter.recentlyListed,
+    'Most traded' => InstrumentFilter.mostTraded,
+    _ => InstrumentFilter.allStocks,
+  };
 
   void _go(BuildContext context, String title) {
     final builders = <String, WidgetBuilder>{
@@ -176,7 +231,32 @@ class DiscoverScreen extends StatelessWidget {
                   crossAxisSpacing: 10,
                   childAspectRatio: 1.35,
                   children: [
-                    for (final p in kProducts) _productTile(context, p),
+                    for (final p in kProducts)
+                      GestureDetector(
+                        onTap: () {
+                          final filter = switch (p.$3) {
+                            'lcy' => InstrumentFilter.localFunds,
+                            'fcy' => InstrumentFilter.foreignFunds,
+                            'metal' => InstrumentFilter.metalFunds,
+                            'savings' => InstrumentFilter.savings,
+                            _ => InstrumentFilter.allStocks,
+                          };
+                          if (api != null) {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => Scaffold(
+                                body: InstrumentListScreen(
+                                  filter: filter,
+                                  api: api!,
+                                  money: money,
+                                  available: available,
+                                  logoUrl: api!.logoUrl,
+                                ),
+                              ),
+                            ));
+                          }
+                        },
+                        child: _productTile(context, p),
+                      ),
                   ],
                 ),
                 const SectionLabel('More ways to invest'),
@@ -206,7 +286,26 @@ class DiscoverScreen extends StatelessWidget {
                   // lines at Cairo's metrics.
                   childAspectRatio: 2.6,
                   children: [
-                    for (final c in kCollections) _collectionTile(context, c),
+                    for (final c in kCollections)
+                      GestureDetector(
+                        onTap: () {
+                          final filter = _filterForCollection(c.$1);
+                          if (api != null) {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => Scaffold(
+                                body: InstrumentListScreen(
+                                  filter: filter,
+                                  api: api!,
+                                  money: money,
+                                  available: available,
+                                  logoUrl: api!.logoUrl,
+                                ),
+                              ),
+                            ));
+                          }
+                        },
+                        child: _collectionTile(context, c),
+                      ),
                   ],
                 ),
                 const SectionLabel('Help and tools'),
@@ -290,12 +389,11 @@ class DiscoverScreen extends StatelessWidget {
     return SvgPicture.string(svg, width: 64, height: 48);
   }
 
-  static String _hex(Color c) =>
-      '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
-
   Widget _collectionTile(
-      BuildContext context, (String, String, IconData) c) {
+      BuildContext context, (String, IconData) c) {
     final pal = context.pal;
+    final filter = _filterForCollection(c.$1);
+    final count = _countLabel(filter);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -313,7 +411,7 @@ class DiscoverScreen extends StatelessWidget {
               color: pal.tint,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(c.$3, size: 18, color: pal.actDk),
+            child: Icon(c.$2, size: 18, color: pal.actDk),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -330,7 +428,7 @@ class DiscoverScreen extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                       color: pal.ink,
                     )),
-                Text(c.$2,
+                Text(count,
                     style: TextStyle(fontSize: 10.5, color: pal.mute)),
               ],
             ),
@@ -415,8 +513,6 @@ class MoneyScreen extends StatelessWidget {
           _bills(context),
           _divider(context),
           _transactions(context),
-          _divider(context),
-          _install(context),
           const SizedBox(height: 24),
         ],
       ),
@@ -545,9 +641,9 @@ class MoneyScreen extends StatelessWidget {
             // The stacked-cards illustration, transcribed from the source SVG.
             SvgPicture.string(
               '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 58">'
-              '<rect x="10" y="2" width="78" height="50" rx="7" fill="${DiscoverScreen._hex(pal.act)}"/>'
-              '<rect x="2" y="6" width="78" height="50" rx="7" fill="${DiscoverScreen._hex(pal.ink)}"/>'
-              '<rect x="11" y="18" width="15" height="11" rx="2.5" fill="${DiscoverScreen._hex(pal.act)}"/>'
+              '<rect x="10" y="2" width="78" height="50" rx="7" fill="${_hex(pal.act)}"/>'
+              '<rect x="2" y="6" width="78" height="50" rx="7" fill="${_hex(pal.ink)}"/>'
+              '<rect x="11" y="18" width="15" height="11" rx="2.5" fill="${_hex(pal.act)}"/>'
               '<rect x="11" y="41" width="34" height="3" rx="1.5" fill="#fff" opacity=".45"/>'
               '<circle cx="66" cy="42" r="7" fill="#fff" opacity=".28"/>'
               '<circle cx="73" cy="42" r="7" fill="#fff" opacity=".28"/></svg>',
@@ -799,7 +895,7 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(children: [
                     _row(Ph.bell, 'Notifications', 'On', true,
                         onTap: () => _push(
-                            context, (_) => NotificationsScreen(api: api))),
+                            context, (_) => NotificationsScreen(api: api!))),
                     _row(Ph.shieldCheck, 'Security', 'PIN, 2FA, devices', false,
                         onTap: () => _push(
                             context,

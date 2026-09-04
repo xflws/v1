@@ -184,92 +184,98 @@ class _SignInScreenState extends State<SignInScreen> {
     return Scaffold(
       backgroundColor: pal.p0,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // App logo — the XFLWS brand mark.
-              SvgPicture.asset(
-                'assets/brand/icon.svg',
-                width: 64,
-                height: 64,
-              ),
-              const SizedBox(height: 20),
-              Text('Welcome back',
-                  style: T.bigNum.copyWith(color: pal.ink, fontSize: 26)),
-              const SizedBox(height: 6),
-              Text('Sign in to your XFLWS account.',
-                  style: T.body.copyWith(color: pal.mute)),
-              const SizedBox(height: 28),
-              _field(
-                controller: _user,
-                label: 'Phone, email or handle',
-                hint: 'you@example.com',
-                keyboard: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                controller: _pw,
-                label: 'Password',
-                hint: 'Your password',
-                obscure: _obscure,
-                onSubmit: _submit,
-                suffix: IconButton(
-                  icon: Icon(Ph.eye, size: 18, color: pal.mute),
-                  onPressed: () => setState(() => _obscure = !_obscure),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(32, 48, 32, 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // App logo — the XFLWS brand mark, centered.
+                SvgPicture.asset(
+                  'assets/brand/icon.svg',
+                  width: 72,
+                  height: 72,
                 ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Icon(Ph.warningCircle, size: 15, color: pal.loss),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      // Diagnostics run to several lines and must not clip —
-                      // the useful part is usually at the end.
-                      child: SelectableText(
-                        _error!,
-                        style: T.rowSub.copyWith(color: pal.loss, height: 1.4),
+                const SizedBox(height: 24),
+                Text('Welcome back',
+                    textAlign: TextAlign.center,
+                    style: T.bigNum.copyWith(color: pal.ink, fontSize: 26)),
+                const SizedBox(height: 6),
+                Text('Sign in to your XFLWS account.',
+                    textAlign: TextAlign.center,
+                    style: T.body.copyWith(color: pal.mute)),
+                const SizedBox(height: 32),
+                _field(
+                  controller: _user,
+                  label: 'Phone, email or handle',
+                  hint: 'you@example.com',
+                  keyboard: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  controller: _pw,
+                  label: 'Password',
+                  hint: 'Your password',
+                  obscure: _obscure,
+                  onSubmit: _submit,
+                  suffix: IconButton(
+                    icon: Icon(Ph.eye, size: 18, color: pal.mute),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Icon(Ph.warningCircle, size: 15, color: pal.loss),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        // Diagnostics run to several lines and must not clip —
+                        // the useful part is usually at the end.
+                        child: SelectableText(
+                          _error!,
+                          style: T.rowSub.copyWith(color: pal.loss, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 58,
+                  child: FilledButton(
+                    onPressed: _busy ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: pal.act,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                  ],
+                    child: _busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Sign in',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            )),
+                  ),
                 ),
               ],
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 50,
-                child: FilledButton(
-                  onPressed: _busy ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: pal.act,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: _busy
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Sign in',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          )),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -286,9 +292,11 @@ class _SignInScreenState extends State<SignInScreen> {
     VoidCallback? onSubmit,
   }) {
     final pal = context.pal;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
         Text(label, style: T.label.copyWith(color: pal.mute)),
         const SizedBox(height: 6),
         TextField(
@@ -316,6 +324,7 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -340,12 +349,22 @@ class Shell extends StatefulWidget {
   State<Shell> createState() => _ShellState();
 }
 
+/// Tab order matching XTabBar: home, discover, markets, portfolio, money, settings.
+const List<String> kTabOrder = [
+  'home', 'discover', 'markets', 'portfolio', 'money', 'settings',
+];
+
+int _tabIndex(String id) => kTabOrder.indexOf(id).clamp(0, kTabOrder.length - 1);
+String _tabId(int index) => kTabOrder[index.clamp(0, kTabOrder.length - 1)];
+
 class _ShellState extends State<Shell> {
   String _tab = 'home';
   late Session _session = widget.session;
   List<dynamic> _orders = const [];
   String _sessionState = 'Closed';
   String _sessionNote = '';
+  late final PageController _pageCtrl =
+      PageController(initialPage: _tabIndex(_tab));
 
   @override
   void initState() {
@@ -457,10 +476,13 @@ class _ShellState extends State<Shell> {
         animation: widget.money,
         builder: (context, _) => Stack(
           children: [
-            RefreshIndicator(
-              onRefresh: _refresh,
-              color: context.pal.act,
-              child: _body(),
+            PageView(
+              controller: _pageCtrl,
+              onPageChanged: (i) => setState(() => _tab = _tabId(i)),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                for (final id in kTabOrder) _bodyFor(id),
+              ],
             ),
             VoiceFab(onTap: _openVoice),
           ],
@@ -468,9 +490,97 @@ class _ShellState extends State<Shell> {
       ),
       bottomNavigationBar: XTabBar(
         current: _tab,
-        onTap: (id) => setState(() => _tab = id),
+        onTap: (id) {
+          setState(() => _tab = id);
+          _pageCtrl.animateToPage(
+            _tabIndex(id),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+          );
+        },
       ),
     );
+  }
+
+  Widget _bodyFor(String id) {
+    switch (id) {
+      case 'home':
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          color: context.pal.act,
+          child: HomeScreen(
+            session: _session,
+            money: widget.money,
+            logoUrl: widget.api.logoUrl,
+            onOpenTab: (t) {
+              setState(() => _tab = t);
+              _pageCtrl.animateToPage(
+                _tabIndex(t),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+              );
+            },
+            api: widget.api,
+            onChanged: _refresh,
+          ),
+        );
+      case 'discover':
+        return DiscoverScreen(
+          money: widget.money,
+          api: widget.api,
+          available: _session.portfolio.balances.available,
+        );
+      case 'markets':
+        return MarketsScreen(
+          money: widget.money,
+          sessionState: _sessionState,
+          sessionNote: _sessionNote,
+          logoUrl: widget.api.logoUrl,
+          api: widget.api,
+          available: _session.portfolio.balances.available,
+        );
+      case 'portfolio':
+        return RefreshIndicator(
+          onRefresh: _refresh,
+          color: context.pal.act,
+          child: PortfolioScreen(
+            session: _session,
+            money: widget.money,
+            logoUrl: widget.api.logoUrl,
+            orders: _orders,
+            api: widget.api,
+            onChanged: _refresh,
+          ),
+        );
+      case 'money':
+        return MoneyScreen(
+          session: _session,
+          money: widget.money,
+          api: widget.api,
+          onChanged: _refresh,
+        );
+      case 'settings':
+        return SettingsScreen(
+          session: _session,
+          money: widget.money,
+          api: widget.api,
+          theme: widget.theme,
+          onChanged: _refresh,
+          onSignOut: () async {
+            await widget.api.logout();
+            if (context.mounted) {
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (_) => SignInScreen(
+                    api: widget.api,
+                    money: widget.money,
+                    theme: widget.theme),
+              ));
+            }
+          },
+        );
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   /// (ticker, name) pairs the parser matches spoken words against. Built from
@@ -522,6 +632,7 @@ class _ShellState extends State<Shell> {
           holding: h,
           available: _session.portfolio.balances.available,
           onChanged: _refresh,
+          sessionState: _sessionState,
         );
         return '${it.say}. Check the cost and confirm on the ticket.';
 
@@ -553,71 +664,4 @@ class _ShellState extends State<Shell> {
     }
   }
 
-  Widget _body() {
-    switch (_tab) {
-      case 'home':
-        return HomeScreen(
-          session: _session,
-          money: widget.money,
-          logoUrl: widget.api.logoUrl,
-          onOpenTab: (id) => setState(() => _tab = id),
-          api: widget.api,
-          onChanged: _refresh,
-        );
-      case 'discover':
-        return DiscoverScreen(
-          money: widget.money,
-          api: widget.api,
-          available: _session.portfolio.balances.available,
-        );
-      case 'markets':
-        return MarketsScreen(
-          money: widget.money,
-          sessionState: _sessionState,
-          sessionNote: _sessionNote,
-          logoUrl: widget.api.logoUrl,
-          api: widget.api,
-          available: _session.portfolio.balances.available,
-        );
-      case 'money':
-        return MoneyScreen(
-          session: _session,
-          money: widget.money,
-          api: widget.api,
-          onChanged: _refresh,
-        );
-      case 'settings':
-        return SettingsScreen(
-          session: _session,
-          money: widget.money,
-          api: widget.api,
-          theme: widget.theme,
-          onChanged: _refresh,
-          onSignOut: () async {
-            await widget.api.logout();
-            if (context.mounted) {
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (_) =>
-                    SignInScreen(
-                        api: widget.api,
-                        money: widget.money,
-                        theme: widget.theme),
-              ));
-            }
-          },
-        );
-      case 'portfolio':
-        return PortfolioScreen(
-          session: _session,
-          money: widget.money,
-          logoUrl: widget.api.logoUrl,
-          orders: _orders,
-          api: widget.api,
-          onChanged: _refresh,
-        );
-      default:
-        // Every tab is implemented; this is unreachable.
-        return const SizedBox.shrink();
-    }
-  }
 }

@@ -17,6 +17,7 @@ Future<void> openSecurity(
   Holding? holding,
   num available = 0,
   VoidCallback? onChanged,
+  String sessionState = 'Closed',
 }) {
   return Navigator.of(context).push(MaterialPageRoute(
     builder: (_) => SecurityScreen(
@@ -25,6 +26,7 @@ Future<void> openSecurity(
       api: api,
       holding: holding,
       logoUrl: api.logoUrl,
+      sessionState: sessionState,
       onTrade: (side) => Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => OrderScreen(
           api: api,
@@ -47,4 +49,10 @@ Instrument instrumentFromHolding(Holding h) => Instrument(
       name: h.name,
       last: h.price,
       change: h.change,
+      sector: h.group == 'Metal funds' ? 'Gold' : h.group,
+      kind: switch (h.group) {
+        'Funds' || 'Metal funds' => 'fund',
+        'Cash' => 'cash',
+        _ => 'share',
+      },
     );

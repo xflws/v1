@@ -14,6 +14,7 @@ import '../widgets/treemap.dart';
 import '../widgets/open_security.dart';
 import '../data/api.dart';
 import 'home.dart' show syntheticSeries, scrubLabelFor, kRanges;
+import 'instrument_list.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({
@@ -513,54 +514,57 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       child: Column(
         children: [
           for (var i = 0; i < groups.length; i++)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: i == 0 ? BorderSide.none : BorderSide(color: pal.line),
+            GestureDetector(
+              onTap: () => _openClass(context, groups[i]),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: i == 0 ? BorderSide.none : BorderSide(color: pal.line),
+                  ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: pal.tint,
-                      borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: pal.tint,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(kGroupIcon[groups[i]] ?? Ph.chartBar,
+                          size: 19, color: pal.actDk),
                     ),
-                    child: Icon(kGroupIcon[groups[i]] ?? Ph.chartBar,
-                        size: 19, color: pal.actDk),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(groups[i],
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w500,
+                                color: pal.ink,
+                              )),
+                          Text(
+                            _p.inGroup(groups[i]).length == 1
+                                ? '1 holding'
+                                : '${_p.inGroup(groups[i]).length} holdings',
+                            style: TextStyle(fontSize: 11, color: pal.mute),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(groups[i],
-                            style: TextStyle(
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w500,
-                              color: pal.ink,
-                            )),
                         Text(
-                          _p.inGroup(groups[i]).length == 1
-                              ? '1 holding'
-                              : '${_p.inGroup(groups[i]).length} holdings',
-                          style: TextStyle(fontSize: 11, color: pal.mute),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        widget.money.format(_p.groupTotal(groups[i]),
-                            decimals: 2),
-                        style: TextStyle(
-                          fontSize: 13.5,
+                          widget.money.format(_p.groupTotal(groups[i]),
+                              decimals: 2),
+                          style: TextStyle(
+                            fontSize: 13.5,
                           fontWeight: FontWeight.w500,
                           color: pal.ink,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -581,7 +585,164 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 ],
               ),
             ),
+          ),
         ],
+      ),
+    );
+  }
+
+  /// Opens a bottom sheet showing MY holdings in that asset class.
+  void _openClass(BuildContext context, String group) {
+    final pal = context.pal;
+    final holdings = _p.inGroup(group);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: pal.p0,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheet) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Column(
+                children: [
+                  Container(
+                    width: 36, height: 4,
+                    decoration: BoxDecoration(
+                      color: pal.line,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text('My $group',
+                          style: TextStyle(
+                            fontSize: 17, fontWeight: FontWeight.w600,
+                            color: pal.ink,
+                          )),
+                      const Spacer(),
+                      Text(
+                        widget.money.format(_p.groupTotal(group), decimals: 2),
+                        style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600,
+                          color: pal.actDk,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: holdings.isEmpty
+                  ? Center(
+                      child: Text('No $group in your portfolio.',
+                          style: TextStyle(fontSize: 13, color: pal.mute)),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      itemCount: holdings.length,
+                      itemBuilder: (context, i) {
+                        final h = holdings[i];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.of(sheet).pop();
+                            if (h.ticker.isEmpty || widget.api == null) return;
+                            openSecurity(
+                              context,
+                              api: widget.api!,
+                              money: widget.money,
+                              instrument: instrumentFromHolding(h),
+                              holding: h,
+                              available: _p.balances.available,
+                              onChanged: widget.onChanged,
+                            );
+                          },
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: pal.line),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Mark(
+                                  monogram: h.ticker.isEmpty
+                                      ? 'C'
+                                      : h.ticker.substring(
+                                          0, h.ticker.length.clamp(0, 2)),
+                                  colour: tickerColour(h.ticker),
+                                  ticker: h.ticker,
+                                  size: 40,
+                                  logoUrl: widget.logoUrl,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                          h.ticker.isEmpty
+                                              ? 'Cash balance'
+                                              : h.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: pal.ink,
+                                          )),
+                                      Text(
+                                        h.ticker.isEmpty
+                                            ? 'Available to spend'
+                                            : '${h.units} ${h.unitLabel}',
+                                        style: TextStyle(
+                                            fontSize: 11, color: pal.mute),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      widget.money.format(h.value,
+                                          decimals: 2),
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w500,
+                                        color: pal.ink,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures()
+                                        ],
+                                      ),
+                                    ),
+                                    if (h.change != 0)
+                                      PctTag(delta: h.change, up: h.up),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
