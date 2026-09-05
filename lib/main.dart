@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/tokens.dart';
 import 'core/money.dart';
 import 'core/theme_controller.dart';
@@ -189,6 +190,8 @@ class _SignInScreenState extends State<SignInScreen> {
     });
     try {
       await widget.api.login(_user.text.trim(), _pw.text);
+      // Save session cookie for persistence across app launches.
+      await widget.api.persistSession();
       final session = Session.fromJson(await widget.api.me());
 
       // Live rates are a nicety, not a precondition for signing in. Catching
@@ -416,6 +419,8 @@ class _ShellState extends State<Shell> {
   List<dynamic> _orders = const [];
   String _sessionState = 'Closed';
   String _sessionNote = '';
+  late final PageController _pageCtrl =
+      PageController(initialPage: _tabIndex(_tab));
 
   @override
   void initState() {
@@ -527,27 +532,12 @@ class _ShellState extends State<Shell> {
         animation: widget.money,
         builder: (context, _) => Stack(
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              transitionBuilder: (child, animation) {
-                final offsetTween = Tween<Offset>(
-                  begin: const Offset(0.08, 0),
-                  end: Offset.zero,
-                ).chain(CurveTween(curve: Curves.easeOutCubic));
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: offsetTween.animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey<String>(_tab),
-                child: _bodyFor(_tab),
-              ),
+            PageView.builder(
+              controller: _pageCtrl,
+              physics: const BouncingScrollPhysics(),
+              itemCount: kTabOrder.length,
+              onPageChanged: (i) => setState(() => _tab = _tabId(i)),
+              itemBuilder: (context, i) => _bodyFor(kTabOrder[i]),
             ),
             VoiceFab(onTap: _openVoice),
           ],
@@ -557,6 +547,7 @@ class _ShellState extends State<Shell> {
         current: _tab,
         onTap: (id) {
           if (id == _tab) return;
+          _pageCtrl.jumpToPage(_tabIndex(id));
           setState(() => _tab = id);
         },
       ),
@@ -624,6 +615,9 @@ class _ShellState extends State<Shell> {
           onChanged: _refresh,
           onSignOut: () async {
             await widget.api.logout();
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('xflws_cookie');
+            await prefs.remove('xflws_signed_in');
             if (context.mounted) {
               Navigator.of(context).pushReplacement(MaterialPageRoute(
                 builder: (_) => SignInScreen(
