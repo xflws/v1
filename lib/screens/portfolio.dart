@@ -14,7 +14,6 @@ import '../widgets/treemap.dart';
 import '../widgets/open_security.dart';
 import '../data/api.dart';
 import 'home.dart' show syntheticSeries, scrubLabelFor, kRanges;
-import 'instrument_list.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({

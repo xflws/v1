@@ -17,7 +17,6 @@ import 'widgets/tab_bar.dart';
 import 'widgets/voice_fab.dart';
 import 'widgets/voice_sheet.dart';
 import 'core/voice_command.dart';
-import 'screens/cards.dart';
 import 'screens/transfer.dart';
 import 'screens/more_screens.dart';
 import 'widgets/open_security.dart';
@@ -40,11 +39,36 @@ class _XflwsAppState extends State<XflwsApp> {
   final Api _api = Api(baseUrl: kBaseUrl);
   final Money _money = Money();
   final ThemeController _theme = ThemeController();
+  bool _booting = true;
+  Session? _session;
 
   @override
   void initState() {
     super.initState();
     _theme.load();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      await _api.restoreSession();
+      if (!mounted) return;
+      if (!_api.signedIn || !await _api.sessionAlive()) {
+        setState(() => _booting = false);
+        return;
+      }
+      final session = Session.fromJson(await _api.me());
+      try {
+        _money.adopt(await _api.currencies());
+      } catch (_) {}
+      if (!mounted) return;
+      setState(() {
+        _session = session;
+        _booting = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _booting = false);
+    }
   }
 
   @override
@@ -61,36 +85,65 @@ class _XflwsAppState extends State<XflwsApp> {
     return AnimatedBuilder(
       animation: _theme,
       builder: (context, _) => Tokens(
-      pal: pal,
-      hero: _theme.hero,
-      child: MaterialApp(
-        title: 'XFLWS',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          fontFamily: T.family,
-          scaffoldBackgroundColor: pal.p0,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: pal.act,
-            primary: pal.act,
-            surface: pal.p2,
-            error: pal.loss,
+        pal: pal,
+        hero: _theme.hero,
+        child: MaterialApp(
+          title: 'XFLWS',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            useMaterial3: true,
+            fontFamily: T.family,
+            scaffoldBackgroundColor: pal.p0,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: pal.act,
+              primary: pal.act,
+              surface: pal.p2,
+              error: pal.loss,
+            ),
+            splashFactory: InkRipple.splashFactory,
           ),
-          splashFactory: InkRipple.splashFactory,
-        ),
-        // The web shell is full width on phones and capped at 430px, centred,
-        // on anything wider. Same here.
-        builder: (context, child) => ColoredBox(
-          color: const Color(0xFFE8E6E2),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: kShellMaxWidth),
-              child: Material(color: pal.p0, child: child),
+          builder: (context, child) => ColoredBox(
+            color: const Color(0xFFE8E6E2),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: kShellMaxWidth),
+                child: Material(color: pal.p0, child: child),
+              ),
             ),
           ),
+          home: _booting
+              ? const _AppLoadingScreen()
+              : (_session != null
+                  ? Shell(
+                      api: _api,
+                      money: _money,
+                      session: _session!,
+                      theme: _theme,
+                    )
+                  : SignInScreen(api: _api, money: _money, theme: _theme)),
         ),
-        home: SignInScreen(api: _api, money: _money, theme: _theme),
       ),
+    );
+  }
+}
+
+class _AppLoadingScreen extends StatelessWidget {
+  const _AppLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final pal = context.pal;
+    return Scaffold(
+      backgroundColor: pal.p0,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: pal.act),
+            const SizedBox(height: 16),
+            Text('Restoring session…', style: T.body.copyWith(color: pal.mute)),
+          ],
+        ),
       ),
     );
   }
@@ -363,8 +416,6 @@ class _ShellState extends State<Shell> {
   List<dynamic> _orders = const [];
   String _sessionState = 'Closed';
   String _sessionNote = '';
-  late final PageController _pageCtrl =
-      PageController(initialPage: _tabIndex(_tab));
 
   @override
   void initState() {
@@ -476,13 +527,27 @@ class _ShellState extends State<Shell> {
         animation: widget.money,
         builder: (context, _) => Stack(
           children: [
-            PageView(
-              controller: _pageCtrl,
-              onPageChanged: (i) => setState(() => _tab = _tabId(i)),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                for (final id in kTabOrder) _bodyFor(id),
-              ],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInOutCubic,
+              transitionBuilder: (child, animation) {
+                final offsetTween = Tween<Offset>(
+                  begin: const Offset(0.08, 0),
+                  end: Offset.zero,
+                ).chain(CurveTween(curve: Curves.easeOutCubic));
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: offsetTween.animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey<String>(_tab),
+                child: _bodyFor(_tab),
+              ),
             ),
             VoiceFab(onTap: _openVoice),
           ],
@@ -491,12 +556,8 @@ class _ShellState extends State<Shell> {
       bottomNavigationBar: XTabBar(
         current: _tab,
         onTap: (id) {
+          if (id == _tab) return;
           setState(() => _tab = id);
-          _pageCtrl.animateToPage(
-            _tabIndex(id),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOutCubic,
-          );
         },
       ),
     );
@@ -514,11 +575,6 @@ class _ShellState extends State<Shell> {
             logoUrl: widget.api.logoUrl,
             onOpenTab: (t) {
               setState(() => _tab = t);
-              _pageCtrl.animateToPage(
-                _tabIndex(t),
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutCubic,
-              );
             },
             api: widget.api,
             onChanged: _refresh,

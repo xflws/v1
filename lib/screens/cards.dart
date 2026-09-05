@@ -7,7 +7,6 @@ import '../core/tokens.dart';
 import '../core/money.dart';
 import '../core/ph.dart';
 import '../data/api.dart';
-import '../widgets/atoms.dart';
 
 /// A card as the API returns it.
 class PayCard {
@@ -149,7 +148,7 @@ class _CardsScreenState extends State<CardsScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final r = await widget.api.issueCard(kind);
+      await widget.api.issueCard(kind);
       widget.onChanged?.call();
       if (!mounted) return;
       await _load();

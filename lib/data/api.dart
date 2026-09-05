@@ -5,6 +5,7 @@
 // selects the sandbox data directory; absent means live.
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'client.dart';
 
 enum ApiMode { live, sandbox }
@@ -40,6 +41,22 @@ class Api {
 
   bool get signedIn => _signedIn;
 
+  Future<void> restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    _cookie = prefs.getString('xflws_cookie');
+    _signedIn = prefs.getBool('xflws_signed_in') ?? false;
+  }
+
+  Future<void> persistSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_cookie != null && _cookie!.isNotEmpty) {
+      await prefs.setString('xflws_cookie', _cookie!);
+    } else {
+      await prefs.remove('xflws_cookie');
+    }
+    await prefs.setBool('xflws_signed_in', _signedIn);
+  }
+
   Uri _uri(String route, [Map<String, String>? query]) =>
       Uri.parse('$baseUrl/api/index.php').replace(queryParameters: {
         'r': route,
@@ -49,9 +66,6 @@ class Api {
   Map<String, String> get _headers => {
         'Accept': 'application/json',
         if (mode == ApiMode.sandbox) 'X-XFLWS-Mode': 'sandbox',
-        // Only where Dart owns the headers. In a browser `Cookie` is a
-        // forbidden header, so setting it here does nothing — withCredentials
-        // on the BrowserClient carries the session instead.
         if (!browserManagesCookies && _cookie != null) 'Cookie': _cookie!,
       };
 
@@ -99,6 +113,7 @@ class Api {
   Future<Map<String, dynamic>> login(String user, String password) async {
     final r = await post('auth.login', {'user': user, 'password': password});
     _signedIn = true;
+    await persistSession();
     return Map<String, dynamic>.from(r as Map);
   }
 
@@ -108,6 +123,7 @@ class Api {
     } finally {
       _cookie = null;
       _signedIn = false;
+      await persistSession();
     }
   }
 

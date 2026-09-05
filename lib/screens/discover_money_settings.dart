@@ -744,52 +744,6 @@ class MoneyScreen extends StatelessWidget {
 
   Widget _transactions(BuildContext context) =>
       _TransactionList(api: api, money: money);
-
-  Widget _install(BuildContext context) {
-    final pal = context.pal;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: pal.p1,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: pal.tint,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Ph.deviceMobile, size: 21, color: pal.actDk),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Install XFLWS',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: pal.ink,
-                      )),
-                  Text('Full screen, works offline',
-                      style: TextStyle(
-                          fontSize: 11, height: 1.375, color: pal.mute)),
-                ],
-              ),
-            ),
-            Icon(Ph.caretRight, size: 13, color: pal.mute),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────

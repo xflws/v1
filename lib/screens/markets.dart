@@ -187,16 +187,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
     return '$buf.${parts[1]}';
   }
 
-  /// Instruments carry ninety closing prices once seeded; the last few make
-  /// the sparkline on an index card.
-  List<num> _sparkFor(String ticker, List<num> fallback) {
-    for (final i in _instruments) {
-      if (i.ticker == ticker && i.history.length > 6) {
-        return i.history.sublist(i.history.length - 7);
-      }
-    }
-    return fallback;
-  }
+
 
   /// (ticker, colour, change) triples, from the API when it answers.
   List<(String, int, double)> get _moverRows {

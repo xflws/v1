@@ -101,7 +101,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _range = '1M';
   int? _scrub;
-  int _group = 0;
   int _sortField = 0; // 0 = position size, 1 = change, 2 = name
   bool _sortAsc = false;
 
