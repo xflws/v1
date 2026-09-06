@@ -197,6 +197,12 @@ class Instrument {
     this.volume = 0,
     this.turnover = 0,
     this.tags = const [],
+    this.industry = '',
+    this.ceo = '',
+    this.headquarters = '',
+    this.founded = '',
+    this.website = '',
+    this.isin = '',
   });
 
   final String ticker;
@@ -233,6 +239,14 @@ class Instrument {
   /// Backend-controlled tags: sharia, egx30, dividend, active, recent, etc.
   final List<String> tags;
 
+  /// Company info from backend.
+  final String industry;
+  final String ceo;
+  final String headquarters;
+  final String founded;
+  final String website;
+  final String isin;
+
   bool get up => change >= 0;
   bool get tradable => state == 'Trading';
 
@@ -255,6 +269,12 @@ class Instrument {
         tags: ((j['tags'] as List?) ?? const [])
             .map((e) => e.toString())
             .toList(),
+        industry: _s(j['industry']),
+        ceo: _s(j['ceo']),
+        headquarters: _s(j['headquarters']),
+        founded: _s(j['founded']),
+        website: _s(j['website']),
+        isin: _s(j['isin']),
       );
 }
 

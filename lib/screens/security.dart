@@ -74,17 +74,28 @@ class _SecurityScreenState extends State<SecurityScreen> {
       ];
 
   Future<void> _saveAlert(
-      BuildContext ctx, String direction, num price) async {
+      BuildContext ctx, String direction, num price, String action) async {
     try {
+      final note = action == 'notify'
+          ? ''
+          : action == 'buy'
+              ? 'auto-buy'
+              : 'auto-sell';
       await widget.api.saveAlert(
         ticker: widget.instrument.ticker,
         direction: direction,
         price: price,
+        note: note,
       );
       if (!mounted) return;
+      final actionText = action == 'notify'
+          ? 'notify'
+          : action == 'buy'
+              ? 'auto-buy'
+              : 'auto-sell';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-          'Alert set on ${widget.instrument.ticker} ${direction == 'above' ? '>' : '<'} ${widget.money.format(price, decimals: 2)}',
+          'Alert: ${widget.instrument.ticker} ${direction == 'above' ? '>' : '<'} ${widget.money.format(price, decimals: 2)} ($actionText)',
         ),
       ));
     } on ApiException catch (e) {
@@ -292,7 +303,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                       final px = num.tryParse(priceCtrl.text);
                       if (px == null || px <= 0) return;
                       Navigator.of(sheet).pop();
-                      _saveAlert(context, direction, px);
+                      _saveAlert(context, direction, px, action);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -724,6 +735,41 @@ class _SecurityScreenState extends State<SecurityScreen> {
             ],
           ),
         ),
+        // Company info from backend tags
+        if (s.ceo.isNotEmpty || s.headquarters.isNotEmpty || s.website.isNotEmpty || s.founded.isNotEmpty || s.isin.isNotEmpty || s.industry.isNotEmpty) ...[
+          _label(context, 'Company info', top: 16),
+          InnerCard(
+            margin: EdgeInsets.zero,
+            child: Column(
+              children: [
+                if (s.industry.isNotEmpty)
+                  _statRow(context, [
+                    ('Industry', s.industry),
+                  ], divided: true),
+                if (s.ceo.isNotEmpty)
+                  _statRow(context, [
+                    ('CEO', s.ceo),
+                  ], divided: true),
+                if (s.headquarters.isNotEmpty)
+                  _statRow(context, [
+                    ('Headquarters', s.headquarters),
+                  ], divided: true),
+                if (s.founded.isNotEmpty)
+                  _statRow(context, [
+                    ('Founded', s.founded),
+                  ], divided: true),
+                if (s.website.isNotEmpty)
+                  _statRow(context, [
+                    ('Website', s.website),
+                  ], divided: true),
+                if (s.isin.isNotEmpty)
+                  _statRow(context, [
+                    ('ISIN', s.isin),
+                  ], divided: true),
+              ],
+            ),
+          ),
+        ],
         _label(context, 'Price alerts'),
         SizedBox(
           height: 38,
