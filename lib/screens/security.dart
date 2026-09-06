@@ -925,17 +925,92 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
   }
 
-  Widget _ordersTab(BuildContext context) => EmptyState(
-        icon: Ph.listChecks,
-        title: 'No orders yet',
-        body: 'Orders you place on ${widget.instrument.ticker} appear here.',
-      );
+  Widget _ordersTab(BuildContext context) {
+    final pal = context.pal;
+    // Fetch orders for this instrument from the API
+    return FutureBuilder<List<dynamic>>(
+      future: widget.api.orders().then((orders) =>
+          orders.where((o) => (o['ticker'] ?? '') == widget.instrument.ticker).toList()),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final orders = snapshot.data ?? [];
+        if (orders.isEmpty) {
+          return EmptyState(
+            icon: Ph.listChecks,
+            title: 'No orders yet',
+            body: 'Orders you place on ${widget.instrument.ticker} appear here.',
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: orders.length,
+          itemBuilder: (context, i) {
+            final o = orders[i];
+            final side = (o['side'] ?? 'buy').toString().toUpperCase();
+            final status = o['status'] ?? 'pending';
+            final units = o['units'] ?? 0;
+            final price = o['price'] ?? 0;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: pal.p2,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: pal.line),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36, height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: side == 'BUY' ? pal.gain : pal.loss,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      side == 'BUY' ? Ph.trendUp : Ph.trendDown,
+                      size: 16, color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$side ${units} units',
+                            style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                              color: pal.ink,
+                            )),
+                        Text('Status: ${status}',
+                            style: TextStyle(fontSize: 11, color: pal.mute)),
+                      ],
+                    ),
+                  ),
+                  Text(widget.money.format(price, decimals: 2),
+                      style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w500,
+                        color: pal.ink,
+                      )),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
-  Widget _newsTab(BuildContext context) => EmptyState(
-        icon: Ph.fileText,
-        title: 'No filings',
-        body: 'Company announcements appear here.',
-      );
+  Widget _newsTab(BuildContext context) {
+    final pal = context.pal;
+    return EmptyState(
+      icon: Ph.fileText,
+      title: 'No news yet',
+      body: 'Company news and announcements will appear here.',
+    );
+  }
 
   // ── sticky footer ───────────────────────────────────────────────────────
 
