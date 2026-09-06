@@ -23,16 +23,28 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS IPA (unsigned)
+      - name: Build iOS IPA (manual archive, no signing)
         run: |
-          flutter build ipa \
-            --release \
-            --no-codesign \
-            --dart-define=XFLWS_API=https://xerp.xflws.com
+          cd ios
+          xcodebuild clean archive \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath build/Runner.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+          
+          # Create IPA from archive
+          cd build
+          mkdir Payload
+          cp -r Runner.xcarchive/Products/Applications/Runner.app Payload/
+          zip -r xflws.ipa Payload
+          rm -rf Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: xflws-unsigned-ipa
-          path: build/ios/ipa/*.ipa
+          path: ios/build/xflws.ipa
           retention-days: 30
