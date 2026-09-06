@@ -43,48 +43,58 @@ enum InstrumentFilter {
 String? sectorFilterName;
 
 /// Matches an instrument to a filter category. Public so Discover can count.
+/// Uses backend tags first, falls back to sector/kind heuristics.
 bool matchesFilter(Instrument i, InstrumentFilter f) {
+  final tags = i.tags.map((t) => t.toLowerCase()).toSet();
   switch (f) {
     case InstrumentFilter.allStocks:
       return i.kind == 'share';
     case InstrumentFilter.healthcare:
-      return i.kind == 'share' &&
-          i.sector.toLowerCase().contains('health');
+      return tags.contains('healthcare') ||
+          (i.kind == 'share' && i.sector.toLowerCase().contains('health'));
     case InstrumentFilter.localFunds:
       return i.kind == 'fund' && i.currency == 'EGP';
     case InstrumentFilter.foreignFunds:
       return i.kind == 'fund' && i.currency != 'EGP';
     case InstrumentFilter.metalFunds:
-      return i.kind == 'metal' ||
+      return tags.contains('metal') ||
+          i.kind == 'metal' ||
           (i.kind == 'fund' &&
               (i.sector.toLowerCase().contains('metal') ||
                   i.sector.toLowerCase().contains('gold')));
     case InstrumentFilter.shariaFunds:
-      return i.sector.toLowerCase().contains('sharia');
+      return tags.contains('sharia');
     case InstrumentFilter.moneyMarket:
-      return i.sector.toLowerCase().contains('money market');
+      return tags.contains('money-market') ||
+          i.sector.toLowerCase().contains('money market');
     case InstrumentFilter.fixedIncome:
-      return i.sector.toLowerCase().contains('fixed income') ||
+      return tags.contains('fixed-income') ||
+          i.sector.toLowerCase().contains('fixed income') ||
           i.sector.toLowerCase().contains('bond');
     case InstrumentFilter.equityFunds:
-      return i.kind == 'fund' && i.sector.toLowerCase().contains('equity');
+      return tags.contains('equity') ||
+          (i.kind == 'fund' && i.sector.toLowerCase().contains('equity'));
     case InstrumentFilter.savings:
-      return i.sector.toLowerCase().contains('money market') ||
+      return tags.contains('savings') ||
+          i.sector.toLowerCase().contains('money market') ||
           i.sector.toLowerCase().contains('fixed income');
     case InstrumentFilter.metals:
       return i.kind == 'metal';
     case InstrumentFilter.dividend:
-      return i.sector.toLowerCase().contains('dividend');
+      return tags.contains('dividend');
     case InstrumentFilter.realEstate:
-      return i.sector.toLowerCase().contains('real estate');
+      return tags.contains('real-estate') ||
+          i.sector.toLowerCase().contains('real estate');
     case InstrumentFilter.balanced:
-      return i.sector.toLowerCase().contains('balanced');
+      return tags.contains('balanced') ||
+          i.sector.toLowerCase().contains('balanced');
     case InstrumentFilter.egx30:
-      return i.index.isNotEmpty;
+      return tags.contains('egx30') || i.index.isNotEmpty;
     case InstrumentFilter.recentlyListed:
-      return i.listed.isNotEmpty;
+      return tags.contains('recent') || i.listed.isNotEmpty;
     case InstrumentFilter.mostTraded:
-      return i.kind == 'share' && i.volume > 0;
+      return tags.contains('active') ||
+          (i.kind == 'share' && i.volume > 0);
     case InstrumentFilter.bySector:
       return sectorFilterName != null &&
           i.sector.toLowerCase() == sectorFilterName!.toLowerCase();

@@ -159,6 +159,18 @@ class Api {
   Future<List<dynamic>> instruments() async =>
       _rows(await get('market.instruments'), 'instruments');
 
+  /// Trigger Yahoo Finance price update for all instruments.
+  Future<int> updatePrices() async {
+    final r = await post('market.prices.update');
+    return (r is Map && r['updated'] is num) ? (r['updated'] as num).toInt() : 0;
+  }
+
+  /// Remove invalid instruments (no real name, placeholder data).
+  Future<int> cleanInstruments() async {
+    final r = await post('market.instruments.clean');
+    return (r is Map && r['removed'] is num) ? (r['removed'] as num).toInt() : 0;
+  }
+
   /// Index levels and the FX/commodity strip, editable in the console.
   Future<List<dynamic>> indices() async =>
       _rows(await get('market.indices'), 'indices');

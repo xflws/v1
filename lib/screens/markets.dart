@@ -33,15 +33,24 @@ const List<(String, String, double, bool, List<num>)> kIndices = [
       [23480, 23510, 23495, 23540, 23560, 23575, 23597]),
 ];
 
-/// SECTORS — name, change, icon.
-const List<(String, double, IconData)> kSectors = [
-  ('Health care', 2.61, Ph.firstAidKit),
-  ('Banks', 1.94, Ph.bank),
-  ('Industrials', 0.83, Ph.factory),
-  ('Materials', 0.31, Ph.cube),
-  ('Real estate', -0.42, Ph.buildings),
-  ('Telecom', -1.18, Ph.broadcast),
-];
+/// Sector icon mapping.
+final Map<String, IconData> kSectorIcons = {
+  'Health Services': Ph.firstAidKit,
+  'Finance': Ph.bank,
+  'Industrials': Ph.factory,
+  'Real Estate Development': Ph.buildings,
+  'Telecom': Ph.broadcast,
+  'Process Industries': Ph.cube,
+  'Consumer Durables': Ph.cube,
+  'Energy Minerals': Ph.lightning,
+  'Consumer Non-Durables': Ph.cube,
+  'Transportation': Ph.cube,
+  'Commercial Services': Ph.cube,
+  'Health Technology': Ph.cube,
+  'Technology Services': Ph.cube,
+  'Utilities': Ph.cube,
+  'Distribution Services': Ph.cube,
+};
 
 /// MOVERS — ticker, colour, change.
 const List<(String, int, double)> kGainers = [
@@ -207,24 +216,20 @@ class _MarketsScreenState extends State<MarketsScreen> {
     return _gainers ? kGainers : kLosers;
   }
 
-  /// (name, change, icon) triples.
-  List<(String, double, IconData)> get _sectorRows {
-    if (_liveSectors.isNotEmpty) {
-      return _liveSectors.whereType<Map>().map((e) {
-        final name = '${e['sector'] ?? ''}';
-        final c = e['change'];
-        final icon = kSectors
-            .firstWhere((s) => s.$1.toLowerCase() == name.toLowerCase(),
-                orElse: () => ('', 0, Ph.cube))
-            .$3;
-        return (
-          name,
-          (c is num ? c : num.tryParse('$c') ?? 0).toDouble(),
-          icon
-        );
-      }).toList();
+  /// (name, count, change, icon) quads — computed from real instruments.
+  List<(String, int, double, IconData)> get _sectorRows {
+    final sectors = <String, List<Instrument>>{};
+    for (final i in _instruments) {
+      if (i.kind != 'share' || i.sector.isEmpty) continue;
+      sectors.putIfAbsent(i.sector, () => []).add(i);
     }
-    return kSectors;
+    return sectors.entries.map((e) {
+      final name = e.key;
+      final stocks = e.value;
+      final avgChange = stocks.isEmpty ? 0.0 : stocks.map((s) => s.change).reduce((a, b) => a + b) / stocks.length;
+      final icon = kSectorIcons[name] ?? Ph.cube;
+      return (name, stocks.length, avgChange, icon);
+    }).toList()..sort((a, b) => b.$3.compareTo(a.$3));
   }
 
 
@@ -590,72 +595,79 @@ class _MarketsScreenState extends State<MarketsScreen> {
                         color: pal.tint,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(sectors[i].$3, size: 17, color: pal.actDk),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(sectors[i].$1,
-                        style: TextStyle(fontSize: 13.5, color: pal.ink)),
-                  ),
-                  SizedBox(
-                    width: 110,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: FractionallySizedBox(
-                              widthFactor: sectors[i].$2 >= 0
-                                  ? 0
-                                  : (sectors[i].$2.abs() / mx),
-                              child: Container(
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: pal.loss,
-                                  borderRadius: const BorderRadius.horizontal(
-                                      left: Radius.circular(999)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Container(width: 1, height: 12, color: pal.line),
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: FractionallySizedBox(
-                              widthFactor: sectors[i].$2 >= 0
-                                  ? (sectors[i].$2.abs() / mx)
-                                  : 0,
-                              child: Container(
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: pal.gain,
-                                  borderRadius: const BorderRadius.horizontal(
-                                      right: Radius.circular(999)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      child: Icon(sectors[i].$4, size: 17, color: pal.actDk),
                     ),
-                  ),
-                  SizedBox(
-                    width: 52,
-                    child: Text(
-                      '${sectors[i].$2 >= 0 ? '+' : ''}'
-                      '${sectors[i].$2.toStringAsFixed(2)}%',
-                      textAlign: TextAlign.end,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: sectors[i].$2 >= 0 ? pal.gain : pal.loss,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(sectors[i].$1,
+                              style: TextStyle(fontSize: 13.5, color: pal.ink)),
+                          Text('${sectors[i].$2} stocks',
+                              style: TextStyle(fontSize: 10.5, color: pal.mute)),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    SizedBox(
+                      width: 110,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: FractionallySizedBox(
+                                widthFactor: sectors[i].$3 >= 0
+                                    ? 0
+                                    : (sectors[i].$3.abs() / mx),
+                                child: Container(
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: pal.loss,
+                                    borderRadius: const BorderRadius.horizontal(
+                                        left: Radius.circular(999)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(width: 1, height: 12, color: pal.line),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: FractionallySizedBox(
+                                widthFactor: sectors[i].$3 >= 0
+                                    ? (sectors[i].$3.abs() / mx)
+                                    : 0,
+                                child: Container(
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: pal.gain,
+                                    borderRadius: const BorderRadius.horizontal(
+                                        right: Radius.circular(999)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: 62,
+                      child: Text(
+                        '${sectors[i].$3 >= 0 ? '+' : ''}'
+                        '${sectors[i].$3.toStringAsFixed(2)}%',
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: sectors[i].$3 >= 0 ? pal.gain : pal.loss,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ),
             ),
         ],

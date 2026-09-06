@@ -196,6 +196,7 @@ class Instrument {
     this.history = const [],
     this.volume = 0,
     this.turnover = 0,
+    this.tags = const [],
   });
 
   final String ticker;
@@ -229,6 +230,9 @@ class Instrument {
   final num volume;
   final num turnover;
 
+  /// Backend-controlled tags: sharia, egx30, dividend, active, recent, etc.
+  final List<String> tags;
+
   bool get up => change >= 0;
   bool get tradable => state == 'Trading';
 
@@ -248,6 +252,9 @@ class Instrument {
             .toList(),
         volume: _n(j['volume']),
         turnover: _n(j['turnover']),
+        tags: ((j['tags'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
       );
 }
 

@@ -404,7 +404,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            _circleButton(context, Ph.bell),
+            _circleButton(context, Ph.bell, onTap: () => _showAlertDialog(context)),
             const SizedBox(width: 8),
             _circleButton(
               context,
