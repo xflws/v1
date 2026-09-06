@@ -592,7 +592,7 @@ class _Stroke {
   Map<String, dynamic> toJson() => {
         'kind': 'line',
         'colour':
-            '#${(colour.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
+            '#${(colour.value & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
         'width': width,
         'points': [
           for (final p in points) ...[p.dx, p.dy]

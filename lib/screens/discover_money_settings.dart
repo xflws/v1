@@ -34,7 +34,7 @@ const List<(String, String, String)> kProducts = [
 
 /// Colour to CSS hex for inline SVGs.
 String _hex(Color c) =>
-    '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+    '#${(c.value & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 
 /// COLLECTIONS.
 /// COLLECTIONS — counts are computed dynamically from the API.

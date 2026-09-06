@@ -199,7 +199,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
         final c = e['change'];
         return (
           t,
-          tickerColour(t).toARGB32(),
+          tickerColour(t).value,
           (c is num ? c : num.tryParse('$c') ?? 0).toDouble()
         );
       }).toList();
@@ -769,7 +769,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
             .map((i) => (
                   i.ticker,
                   i.name,
-                  tickerColour(i.ticker).toARGB32(),
+                  tickerColour(i.ticker).value,
                   (_byValue ? i.turnover / 1000000 : i.volume / 1000000)
                       .toDouble(),
                 ))
