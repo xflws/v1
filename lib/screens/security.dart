@@ -166,42 +166,42 @@ class _SecurityScreenState extends State<SecurityScreen> {
                         ('below', 'Falls below', Ph.trendDown),
                       ])
                         Expanded(
-                          child: GestureDetector(
+                          child: InkWell(
                             onTap: () => setS(() => direction = val),
-                            child: Container(
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
                               margin: EdgeInsets.only(
                                   right: val == 'above' ? 6 : 0),
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 12),
+                                  vertical: 14, horizontal: 8),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: direction == val
-                                    ? pal.tint
-                                    : pal.p1,
+                                color: direction == val ? pal.act : pal.p1,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: direction == val
                                       ? pal.act
                                       : pal.line,
-                                  width: direction == val ? 1.5 : 1,
+                                  width: direction == val ? 2 : 1,
                                 ),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(icon, size: 15,
+                                  Icon(icon, size: 16,
                                       color: direction == val
-                                          ? pal.actDk
+                                          ? Colors.white
                                           : pal.mute),
                                   const SizedBox(width: 6),
                                   Text(label,
                                       style: TextStyle(
-                                        fontSize: 12.5,
+                                        fontSize: 12,
                                         fontWeight: direction == val
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
                                         color: direction == val
-                                            ? pal.actDk
+                                            ? Colors.white
                                             : pal.ink,
                                       )),
                                 ],
@@ -255,31 +255,31 @@ class _SecurityScreenState extends State<SecurityScreen> {
                         ('sell', 'Auto-sell'),
                       ])
                         Expanded(
-                          child: GestureDetector(
+                          child: InkWell(
                             onTap: () => setS(() => action = val),
-                            child: Container(
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
                               margin: const EdgeInsets.only(right: 6),
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 10),
+                                  vertical: 12, horizontal: 8),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: action == val ? pal.tint : pal.p1,
+                                color: action == val ? pal.act : pal.p1,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: action == val
-                                      ? pal.act
-                                      : pal.line,
-                                  width: action == val ? 1.5 : 1,
+                                  color: action == val ? pal.act : pal.line,
+                                  width: action == val ? 2 : 1,
                                 ),
                               ),
                               child: Text(label,
                                   style: TextStyle(
-                                    fontSize: 11.5,
+                                    fontSize: 11,
                                     fontWeight: action == val
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                     color: action == val
-                                        ? pal.actDk
+                                        ? Colors.white
                                         : pal.ink,
                                   )),
                             ),
@@ -801,7 +801,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
               ]) ...[
                 const SizedBox(width: 6),
                 GestureDetector(
-                  onTap: () => _saveAlert(context, dir, px * (1 + (dir == 'above' ? 1 : -1) * pct / 100)),
+                  onTap: () => _saveAlert(context, dir, px * (1 + (dir == 'above' ? 1 : -1) * pct / 100), 'notify'),
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
