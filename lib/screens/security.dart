@@ -1005,10 +1005,75 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   Widget _newsTab(BuildContext context) {
     final pal = context.pal;
-    return EmptyState(
-      icon: Ph.fileText,
-      title: 'No news yet',
-      body: 'Company news and announcements will appear here.',
+    return FutureBuilder<List<dynamic>>(
+      future: widget.api.news(widget.instrument.ticker),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final news = snapshot.data ?? [];
+        if (news.isEmpty) {
+          return EmptyState(
+            icon: Ph.fileText,
+            title: 'No news yet',
+            body: 'Company news and announcements will appear here.',
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: news.length,
+          itemBuilder: (context, i) {
+            final n = news[i];
+            final title = n['title'] ?? '';
+            final body = n['body'] ?? '';
+            final date = n['date'] ?? '';
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: pal.p2,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: pal.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 32, height: 32,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: pal.tint,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Ph.fileText, size: 14, color: pal.actDk),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(title,
+                            style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                              color: pal.ink,
+                            )),
+                      ),
+                      Text(date,
+                          style: TextStyle(fontSize: 10, color: pal.mute)),
+                    ],
+                  ),
+                  if (body.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(body,
+                        style: TextStyle(
+                          fontSize: 12, height: 1.4, color: pal.mute,
+                        )),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

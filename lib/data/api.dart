@@ -159,6 +159,10 @@ class Api {
   Future<List<dynamic>> instruments() async =>
       _rows(await get('market.instruments'), 'instruments');
 
+  /// Fetch news for a specific ticker.
+  Future<List<dynamic>> news(String ticker) async =>
+      _rows(await get('market.news', {'t': ticker}));
+
   /// Trigger Yahoo Finance price update for all instruments.
   Future<int> updatePrices() async {
     final r = await post('market.prices.update');
