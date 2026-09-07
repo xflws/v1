@@ -478,6 +478,13 @@ class _MarketsScreenState extends State<MarketsScreen> {
 
   Widget _breadth(BuildContext context) {
     final pal = context.pal;
+    // Compute breadth from real instruments
+    final shares = _instruments.where((i) => i.kind == 'share').toList();
+    final gainers = shares.where((i) => i.change > 0).length;
+    final losers = shares.where((i) => i.change < 0).length;
+    final unchanged = shares.length - gainers - losers;
+    final total = shares.length;
+    
     return InnerCard(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -491,18 +498,18 @@ class _MarketsScreenState extends State<MarketsScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      flex: 4373,
+                      flex: losers > 0 ? losers : 1,
                       child: ColoredBox(color: pal.loss, child: const SizedBox.expand()),
                     ),
                     Expanded(
-                      flex: 1331,
+                      flex: unchanged > 0 ? unchanged : 1,
                       child: ColoredBox(
                         color: pal.mute.withValues(alpha: .45),
                         child: const SizedBox.expand(),
                       ),
                     ),
                     Expanded(
-                      flex: 4296,
+                      flex: gainers > 0 ? gainers : 1,
                       child: ColoredBox(color: pal.gain, child: const SizedBox.expand()),
                     ),
                   ],
@@ -513,11 +520,13 @@ class _MarketsScreenState extends State<MarketsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _breadthStat(context, '115', 'losers', pal.loss),
-                _breadthStat(context, '35', 'unchanged', pal.ink),
-                _breadthStat(context, '113', 'gainers', pal.gain),
+                _breadthStat(context, '$losers', 'losers', pal.loss),
+                _breadthStat(context, '$unchanged', 'unchanged', pal.ink),
+                _breadthStat(context, '$gainers', 'gainers', pal.gain),
               ],
             ),
+            Text('$total stocks traded',
+                style: TextStyle(fontSize: 10, color: pal.mute)),
           ],
         ),
       ),
@@ -848,34 +857,52 @@ class _MarketsScreenState extends State<MarketsScreen> {
 
   Widget _flows(BuildContext context) {
     final pal = context.pal;
+    // Show market summary instead of hardcoded flows
+    final shares = _instruments.where((i) => i.kind == 'share').toList();
+    final avgChange = shares.isEmpty ? 0.0 : shares.map((s) => s.change).reduce((a, b) => a + b) / shares.length;
+    final upCount = shares.where((s) => s.change > 0).length;
+    final totalVol = shares.fold<num>(0, (a, b) => a + b.volume);
+    final totalTurnover = shares.fold<num>(0, (a, b) => a + b.turnover);
+    
     return InnerCard(
       margin: EdgeInsets.zero,
-      child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Text('Market Summary',
+                style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: pal.ink,
+                )),
+            const SizedBox(height: 12),
+            _flowRow(context, 'Avg change', '${avgChange >= 0 ? '+' : ''}${avgChange.toStringAsFixed(2)}%', avgChange >= 0),
+            _flowRow(context, 'Stocks up', '$upCount / ${shares.length}', true),
+            _flowRow(context, 'Volume', totalVol > 1000000 ? '${(totalVol / 1000000).toStringAsFixed(1)}M' : '${totalVol.toInt()}', true),
+            _flowRow(context, 'Turnover', totalTurnover > 1000000 ? '${(totalTurnover / 1000000).toStringAsFixed(1)}M' : '${totalTurnover.toInt()}', true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _flowRow(BuildContext context, String label, String value, bool isUp) {
+    final pal = context.pal;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: pal.line)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          for (var i = 0; i < kFlows.length; i++)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: i == 0 ? BorderSide.none : BorderSide(color: pal.line),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(kFlows[i].$1,
-                      style: TextStyle(fontSize: 13, color: pal.ink)),
-                  Text(
-                    kFlows[i].$2,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: kFlows[i].$3 ? pal.gain : pal.loss,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          Text(label, style: TextStyle(fontSize: 12, color: pal.mute)),
+          Text(value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isUp ? pal.gain : pal.loss,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              )),
         ],
       ),
     );
@@ -885,52 +912,22 @@ class _MarketsScreenState extends State<MarketsScreen> {
 
   Widget _news(BuildContext context) {
     final pal = context.pal;
-    return InnerCard(
-      margin: EdgeInsets.zero,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: pal.p1,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         children: [
-          for (var i = 0; i < kNews.length; i++)
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: i == 0 ? BorderSide.none : BorderSide(color: pal.line),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Pill(text: kNews[i].$1, tone: Tone.ok(context)),
-                            const SizedBox(width: 8),
-                            Text(kNews[i].$2,
-                                style: TextStyle(
-                                    fontSize: 11, color: pal.mute)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(kNews[i].$3,
-                            style: TextStyle(
-                              fontSize: 13,
-                              height: 1.375,
-                              color: pal.ink,
-                            )),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Icon(Ph.caretRight, size: 13, color: pal.mute),
-                  ),
-                ],
-              ),
-            ),
+          Icon(Ph.fileText, size: 32, color: pal.mute),
+          const SizedBox(height: 8),
+          Text('Company news',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: pal.ink)),
+          const SizedBox(height: 4),
+          Text('Open any stock to see its news and announcements',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: pal.mute)),
         ],
       ),
     );
