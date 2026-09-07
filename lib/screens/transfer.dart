@@ -8,34 +8,31 @@ import '../core/tokens.dart';
 import '../core/money.dart';
 import '../core/ph.dart';
 import '../widgets/atoms.dart';
+import '../widgets/holdings.dart' show tickerColour;
 import '../data/api.dart';
 
 const List<String> kXferSteps = ['Recipient', 'Confirm', 'Amount', 'Review'];
 
-class Person {
-  const Person(this.handle, this.name, this.phone, this.email, this.since,
-      this.colour, this.sent);
+class Recipient {
+  Recipient({
+    required this.handle,
+    required this.name,
+    this.email = '',
+    this.since = '',
+  });
 
   final String handle;
   final String name;
-  final String phone;
   final String email;
   final String since;
-  final int colour;
 
-  /// Whether money has been sent to them before — a first transfer is called
-  /// out, since that is when a mistyped recipient does damage.
-  final bool sent;
+  factory Recipient.fromJson(Map<String, dynamic> j) => Recipient(
+    handle: j['handle'] ?? '',
+    name: j['name'] ?? '',
+    email: j['email'] ?? '',
+    since: (j['since'] ?? '').toString().substring(0, 4),
+  );
 }
-
-const List<Person> kPeople = [
-  Person('@mona.k', 'Mona Kamal', '+20 10 2244 8891', 'mona.k@gmail.com',
-      '2024', 0xFF0FA3A3, true),
-  Person('@yassin', 'Yassin Adel', '+20 12 7788 1120', 'y.adel@outlook.com',
-      '2025', 0xFF5B3A8E, true),
-  Person('@sara.h', 'Sara Hassan', '+20 11 3390 5567', 'sara@hassan.eg',
-      '2026', 0xFFB5121B, false),
-];
 
 class TransferScreen extends StatefulWidget {
   const TransferScreen({
@@ -58,7 +55,10 @@ class TransferScreen extends StatefulWidget {
 class _TransferScreenState extends State<TransferScreen> {
   int _step = 0;
   String _method = 'qr';
-  Person? _to;
+  Recipient? _to;
+  final _searchCtrl = TextEditingController();
+  List<Recipient> _results = const [];
+  bool _searching = false;
   final TextEditingController _query = TextEditingController();
   final TextEditingController _amount = TextEditingController(text: '1000');
   final TextEditingController _note = TextEditingController();
@@ -74,19 +74,41 @@ class _TransferScreenState extends State<TransferScreen> {
     super.dispose();
   }
 
-  Person? _find() {
+  Recipient? _find() {
     final q = _query.text.trim().toLowerCase();
     if (q.isEmpty) return null;
     final digits = q.replaceAll(RegExp(r'\D'), '');
-    for (final p in kPeople) {
-      if (p.handle.toLowerCase() == q ||
-          p.email.toLowerCase() == q ||
-          (digits.isNotEmpty &&
-              p.phone.replaceAll(RegExp(r'\D'), '') == digits)) {
-        return p;
+    for (final r in _results) {
+      if (r.handle.toLowerCase() == q ||
+          r.name.toLowerCase() == q ||
+          r.email.toLowerCase() == q ||
+          (digits.isNotEmpty && r.handle.contains(digits))) {
+        return r;
       }
     }
     return null;
+  }
+
+  Future<void> _search(String q) async {
+    if (q.trim().isEmpty) {
+      setState(() => _results = []);
+      return;
+    }
+    setState(() => _searching = true);
+    try {
+      final rows = await widget.api.searchUsers(q.trim());
+      if (mounted) {
+        setState(() =>
+            _results = rows
+                .whereType<Map>()
+                .map((e) => Recipient.fromJson(Map<String, dynamic>.from(e)))
+                .toList());
+      }
+    } catch (_) {
+      if (mounted) setState(() => _results = []);
+    } finally {
+      if (mounted) setState(() => _searching = false);
+    }
   }
 
   @override
@@ -201,7 +223,7 @@ class _TransferScreenState extends State<TransferScreen> {
       ('phone', 'Phone number', 'Registered mobile', Ph.deviceMobile, false),
       ('email', 'Email address', 'Registered email', Ph.envelope, false),
     ];
-    final recent = kPeople.where((p) => p.sent).toList();
+    final recent = _results.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -409,7 +431,9 @@ class _TransferScreenState extends State<TransferScreen> {
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
-                  onTap: () => setState(() => _to = kPeople.first),
+                  onTap: () {
+                    if (_results.isNotEmpty) setState(() => _to = _results.first);
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 10),
@@ -453,7 +477,10 @@ class _TransferScreenState extends State<TransferScreen> {
           const SizedBox(height: 6),
           TextField(
             controller: _query,
-            onChanged: (_) => setState(() {}),
+            onChanged: (v) {
+              setState(() {});
+              if (v.length >= 2) _search(v);
+            },
             style: TextStyle(fontSize: 14, color: pal.ink),
             decoration: InputDecoration(
               hintText: hint,
@@ -547,21 +574,6 @@ class _TransferScreenState extends State<TransferScreen> {
             ),
           ),
         ),
-        if (!p.sent) ...[
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Ph.info, size: 13, color: pal.actDk),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'You have not sent money to this person before.',
-                  style: TextStyle(fontSize: 11.5, color: pal.actDk),
-                ),
-              ),
-            ],
-          ),
-        ],
         const SizedBox(height: 12),
         Text(
           'Transfers are instant and irreversible. If this is not the person '
@@ -761,12 +773,12 @@ class _TransferScreenState extends State<TransferScreen> {
             style: TextStyle(fontSize: 12, color: context.pal.mute)),
       );
 
-  Widget _avatar(Person p, double size, {double? fontSize}) => Container(
+  Widget _avatar(Recipient p, double size, {double? fontSize}) => Container(
         width: size,
         height: size,
         alignment: Alignment.center,
         decoration:
-            BoxDecoration(color: Color(p.colour), shape: BoxShape.circle),
+            BoxDecoration(color: tickerColour(p.handle), shape: BoxShape.circle),
         child: Text(
           p.name.substring(0, 1),
           style: TextStyle(

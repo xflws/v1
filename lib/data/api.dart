@@ -163,6 +163,10 @@ class Api {
   Future<List<dynamic>> news(String ticker) async =>
       _rows(await get('market.news', {'t': ticker}));
 
+  /// Search users for transfer.
+  Future<List<dynamic>> searchUsers(String query) async =>
+      _rows(await get('users.search', {'q': query}));
+
   /// Trigger Yahoo Finance price update for all instruments.
   Future<int> updatePrices() async {
     final r = await post('market.prices.update');
