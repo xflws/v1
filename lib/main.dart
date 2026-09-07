@@ -554,6 +554,12 @@ class _ShellState extends State<Shell> {
     );
   }
 
+  void _openTab(String id) {
+    if (id == _tab) return;
+    _pageCtrl.jumpToPage(_tabIndex(id));
+    setState(() => _tab = id);
+  }
+
   Widget _bodyFor(String id) {
     switch (id) {
       case 'home':
@@ -564,9 +570,7 @@ class _ShellState extends State<Shell> {
             session: _session,
             money: widget.money,
             logoUrl: widget.api.logoUrl,
-            onOpenTab: (t) {
-              setState(() => _tab = t);
-            },
+            onOpenTab: _openTab,
             api: widget.api,
             onChanged: _refresh,
           ),

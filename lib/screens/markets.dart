@@ -405,12 +405,16 @@ class _MarketsScreenState extends State<MarketsScreen> {
           final x = rows[i];
           return GestureDetector(
             onTap: () {
-              // Open EGX30 constituents
+              // Open correct filter based on index name
               if (widget.api != null) {
+                final filter = x.$1.contains('30') ? InstrumentFilter.egx30
+                    : x.$1.contains('70') ? InstrumentFilter.allStocks
+                    : x.$1.contains('100') ? InstrumentFilter.allStocks
+                    : InstrumentFilter.allStocks;
                 Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => Scaffold(
                     body: InstrumentListScreen(
-                      filter: InstrumentFilter.egx30,
+                      filter: filter,
                       api: widget.api!,
                       money: widget.money,
                       available: widget.available,
