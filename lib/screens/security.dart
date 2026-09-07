@@ -380,52 +380,111 @@ class _SecurityScreenState extends State<SecurityScreen> {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: Column(
           children: [
-            _circleButton(context, Ph.caretLeft,
-                onTap: () => Navigator.of(context).maybePop()),
-            const SizedBox(width: 12),
-            Mark(
-              monogram: s.ticker.substring(0, s.ticker.length.clamp(0, 2)),
-              colour: tickerColour(s.ticker),
-              ticker: s.ticker,
-              size: 36,
-              logoUrl: widget.logoUrl,
+            // Top row: back, logo, actions
+            Row(
+              children: [
+                _circleButton(context, Ph.caretLeft,
+                    onTap: () => Navigator.of(context).maybePop()),
+                const SizedBox(width: 8),
+                // Larger logo
+                Mark(
+                  monogram: s.ticker.substring(0, s.ticker.length.clamp(0, 2)),
+                  colour: tickerColour(s.ticker),
+                  ticker: s.ticker,
+                  size: 44,
+                  logoUrl: widget.logoUrl,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Full company name
+                      Text(s.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.2,
+                            fontWeight: FontWeight.w700,
+                            color: pal.ink,
+                          )),
+                      const SizedBox(height: 2),
+                      // Ticker + sector
+                      Row(
+                        children: [
+                          Text(s.ticker,
+                              style: TextStyle(
+                                  fontSize: 11, height: 1, color: pal.actDk, fontWeight: FontWeight.w600)),
+                          if (s.sector.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Text('· ${s.sector}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 10, height: 1, color: pal.mute)),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _circleButton(context, Ph.bell, onTap: () => _showAlertDialog(context)),
+                const SizedBox(width: 6),
+                _circleButton(
+                  context,
+                  _fav ? Ph.starFill : Ph.star,
+                  tint: _fav ? pal.act : null,
+                  onTap: () => setState(() => _fav = !_fav),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(s.ticker,
-                      style: TextStyle(
-                          fontSize: 11, height: 1, color: pal.mute)),
-                  const SizedBox(height: 4),
-                  Text(s.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.25,
-                        fontWeight: FontWeight.w600,
-                        color: pal.ink,
-                      )),
-                ],
+            // Company info card
+            if (s.ceo.isNotEmpty || s.headquarters.isNotEmpty || s.website.isNotEmpty || s.founded.isNotEmpty || s.isin.isNotEmpty || s.industry.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: pal.p2,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: pal.line),
+                ),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  children: [
+                    if (s.industry.isNotEmpty) _miniInfo(pal, 'Industry', s.industry),
+                    if (s.ceo.isNotEmpty) _miniInfo(pal, 'CEO', s.ceo),
+                    if (s.headquarters.isNotEmpty) _miniInfo(pal, 'HQ', s.headquarters),
+                    if (s.founded.isNotEmpty) _miniInfo(pal, 'Founded', s.founded),
+                    if (s.website.isNotEmpty) _miniInfo(pal, 'Web', s.website),
+                    if (s.isin.isNotEmpty) _miniInfo(pal, 'ISIN', s.isin),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            _circleButton(context, Ph.bell, onTap: () => _showAlertDialog(context)),
-            const SizedBox(width: 8),
-            _circleButton(
-              context,
-              _fav ? Ph.starFill : Ph.star,
-              tint: _fav ? pal.act : null,
-              onTap: () => setState(() => _fav = !_fav),
-            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _miniInfo(Pal pal, String label, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('$label: ',
+            style: TextStyle(fontSize: 10, color: pal.mute, fontWeight: FontWeight.w500)),
+        Flexible(
+          child: Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10, color: pal.ink)),
+        ),
+      ],
     );
   }
 
